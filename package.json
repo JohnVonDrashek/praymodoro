@@ -1,7 +1,7 @@
 {
   "name": "praymodoro",
   "productName": "Praymodoro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A prayerful Pomodoro timer that keeps you focused and faithful. Features an adorable desktop companion to guide your work sessions with gentle reminders to stay productive and prayerful.",
   "main": ".webpack/main",
   "scripts": {

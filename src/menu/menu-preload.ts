@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, MenuState, MenuAction } from '../shared/types';
+import { IPC_CHANNELS, MenuState, MenuAction, PomodoroMode } from '../shared/types';
 
 contextBridge.exposeInMainWorld('menuApi', {
   getState: (): Promise<MenuState> => {
@@ -17,6 +17,10 @@ contextBridge.exposeInMainWorld('menuApi', {
   onTimeUpdate: (callback: (countdown: string) => void): void => {
     ipcRenderer.on(IPC_CHANNELS.MENU_TIME_UPDATE, (_event, countdown) => callback(countdown));
   },
+
+  onModeUpdate: (callback: (mode: PomodoroMode) => void): void => {
+    ipcRenderer.on(IPC_CHANNELS.MENU_MODE_UPDATE, (_event, mode) => callback(mode));
+  },
 });
 
 declare global {
@@ -26,6 +30,7 @@ declare global {
       sendAction: (action: MenuAction) => void;
       close: () => void;
       onTimeUpdate: (callback: (countdown: string) => void) => void;
+      onModeUpdate: (callback: (mode: PomodoroMode) => void) => void;
     };
   }
 }

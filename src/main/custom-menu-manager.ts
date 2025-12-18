@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, app } from 'electron';
 import { WindowManager } from './window-manager';
 import { SettingsManager } from './settings-manager';
-import { IPC_CHANNELS, MenuState, MenuAction } from '../shared/types';
+import { IPC_CHANNELS, MenuState, MenuAction, PomodoroMode } from '../shared/types';
 import { AVAILABLE_CHARACTERS } from '../shared/constants';
 
 // Webpack provides these constants
@@ -14,6 +14,7 @@ const MENU_HEIGHT = 188;
 export class CustomMenuManager {
   private menuWindow: BrowserWindow | null = null;
   private currentCountdown = '25:00';
+  private currentMode: PomodoroMode = 'work';
 
   constructor(
     private windowManager: WindowManager,
@@ -27,6 +28,7 @@ export class CustomMenuManager {
     ipcMain.handle(IPC_CHANNELS.MENU_GET_STATE, (): MenuState => {
       return {
         countdown: this.currentCountdown,
+        mode: this.currentMode,
         isCharacterVisible: this.windowManager.isVisible(),
         scale: this.windowManager.getScale(),
         character: this.settingsManager.getCharacter(),
@@ -87,6 +89,14 @@ export class CustomMenuManager {
     // Send real-time update to menu if it's open
     if (this.menuWindow && !this.menuWindow.isDestroyed()) {
       this.menuWindow.webContents.send(IPC_CHANNELS.MENU_TIME_UPDATE, countdown);
+    }
+  }
+
+  updateMode(mode: PomodoroMode): void {
+    this.currentMode = mode;
+    // Send real-time update to menu if it's open
+    if (this.menuWindow && !this.menuWindow.isDestroyed()) {
+      this.menuWindow.webContents.send(IPC_CHANNELS.MENU_MODE_UPDATE, mode);
     }
   }
 

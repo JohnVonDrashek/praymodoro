@@ -46,11 +46,13 @@ export const IPC_CHANNELS = {
   MENU_ACTION: 'menu-action',
   MENU_CLOSE: 'menu-close',
   MENU_TIME_UPDATE: 'menu-time-update',
+  MENU_MODE_UPDATE: 'menu-mode-update',
 } as const;
 
 // Menu state sent to the custom menu window
 export interface MenuState {
   countdown: string;
+  mode: PomodoroMode;
   isCharacterVisible: boolean;
   scale: number;
   character: CharacterName;

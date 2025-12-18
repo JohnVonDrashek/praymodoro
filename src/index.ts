@@ -56,7 +56,7 @@ function createApp(): void {
     if (windowManager) windowManager.sendTimeUpdate(state, formattedTime);
 
     // Update tray
-    if (trayManager) trayManager.updateCountdown(formattedTime);
+    if (trayManager) trayManager.updateCountdown(formattedTime, state.type);
   });
 
   timeController.on('period-change', (state) => {

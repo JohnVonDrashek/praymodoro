@@ -1,4 +1,6 @@
-import { MenuState, CharacterName } from '../shared/types';
+import { MenuState, CharacterName, PomodoroMode } from '../shared/types';
+
+let currentMode: PomodoroMode = 'work';
 
 function formatCharacterName(name: CharacterName): string {
   return name
@@ -7,13 +9,18 @@ function formatCharacterName(name: CharacterName): string {
     .join(' ');
 }
 
+function getModeLabel(mode: PomodoroMode): string {
+  return mode === 'work' ? 'Work for:' : 'Pray for:';
+}
+
 async function updateUI(): Promise<void> {
   const state: MenuState = await window.menuApi.getState();
+  currentMode = state.mode;
 
   // Update countdown
   const countdownEl = document.getElementById('countdown');
   if (countdownEl) {
-    countdownEl.querySelector('.menu-label')!.textContent = `Time Remaining: ${state.countdown}`;
+    countdownEl.querySelector('.menu-label')!.textContent = `${getModeLabel(state.mode)} ${state.countdown}`;
   }
 
   // Update toggle character button
@@ -44,7 +51,23 @@ function updateCountdown(countdown: string): void {
   if (countdownEl) {
     const label = countdownEl.querySelector('.menu-label');
     if (label) {
-      label.textContent = `Time Remaining: ${countdown}`;
+      label.textContent = `${getModeLabel(currentMode)} ${countdown}`;
+    }
+  }
+}
+
+function updateMode(mode: PomodoroMode): void {
+  currentMode = mode;
+  // Re-render the countdown label with new mode
+  const countdownEl = document.getElementById('countdown');
+  if (countdownEl) {
+    const label = countdownEl.querySelector('.menu-label');
+    if (label) {
+      // Extract the time from the current text
+      const currentText = label.textContent || '';
+      const timeMatch = currentText.match(/\d+:\d+/);
+      const time = timeMatch ? timeMatch[0] : '25:00';
+      label.textContent = `${getModeLabel(mode)} ${time}`;
     }
   }
 }
@@ -88,5 +111,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Listen for real-time countdown updates
   window.menuApi.onTimeUpdate((countdown) => {
     updateCountdown(countdown);
+  });
+
+  // Listen for real-time mode updates
+  window.menuApi.onModeUpdate((mode) => {
+    updateMode(mode);
   });
 });

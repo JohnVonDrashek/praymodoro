@@ -2,10 +2,12 @@ import { Tray, nativeImage } from 'electron';
 import { WindowManager } from './window-manager';
 import { SettingsManager } from './settings-manager';
 import { CustomMenuManager } from './custom-menu-manager';
+import { PomodoroMode } from '../shared/types';
 
 export class TrayManager {
   private tray: Tray | null = null;
   private currentCountdown = '25:00';
+  private currentMode: PomodoroMode = 'work';
   private customMenuManager: CustomMenuManager | null = null;
 
   constructor(
@@ -53,13 +55,19 @@ export class TrayManager {
   /**
    * Update countdown display
    */
-  updateCountdown(countdown: string): void {
+  updateCountdown(countdown: string, mode: PomodoroMode): void {
     this.currentCountdown = countdown;
+    const modeChanged = this.currentMode !== mode;
+    this.currentMode = mode;
+
     if (this.tray) {
       this.tray.setToolTip(`Praymodoro - ${countdown}`);
     }
     if (this.customMenuManager) {
       this.customMenuManager.updateCountdown(countdown);
+      if (modeChanged) {
+        this.customMenuManager.updateMode(mode);
+      }
     }
   }
 
