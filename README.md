@@ -59,7 +59,7 @@ Praymodoro is a desktop Pomodoro timer that keeps you focused and faithful. A ch
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/praymodoro.git
+git clone https://github.com/JohnVonDrashek/praymodoro.git
 cd praymodoro
 
 # Install dependencies
