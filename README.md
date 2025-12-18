@@ -69,12 +69,28 @@ Praymodoro is a desktop Pomodoro timer that keeps you focused and faithful. A ch
 
 ## Installation
 
-### Prerequisites
+### macOS (Homebrew)
+
+```bash
+brew tap JohnVonDrashek/tap
+brew install --cask praymodoro
+```
+
+### Download
+
+Pre-built binaries are available on the [Releases](https://github.com/JohnVonDrashek/praymodoro-forge/releases) page:
+- **macOS**: `.dmg`
+- **Windows**: `.exe`
+- **Linux**: `.deb`, `.rpm`
+
+### Building from Source
+
+#### Prerequisites
 
 - Node.js 18+
 - npm
 
-### Development
+#### Development
 
 ```bash
 # Clone the repository
