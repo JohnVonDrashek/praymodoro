@@ -1,12 +1,12 @@
-import { Tray, Menu, nativeImage, app } from 'electron';
+import { Tray, nativeImage } from 'electron';
 import { WindowManager } from './window-manager';
 import { SettingsManager } from './settings-manager';
-import { CharacterName } from '../shared/types';
-import { AVAILABLE_CHARACTERS } from '../shared/constants';
+import { CustomMenuManager } from './custom-menu-manager';
 
 export class TrayManager {
   private tray: Tray | null = null;
-  private currentCountdown: string = '25:00';
+  private currentCountdown = '25:00';
+  private customMenuManager: CustomMenuManager | null = null;
 
   constructor(
     private iconPath: string,
@@ -37,8 +37,17 @@ export class TrayManager {
     this.tray = new Tray(icon);
     this.tray.setToolTip('Praymodoro');
 
-    // Initial menu
-    this.updateContextMenu();
+    // Initialize custom menu manager
+    this.customMenuManager = new CustomMenuManager(this.windowManager, this.settingsManager);
+
+    // Show custom menu on click
+    this.tray.on('click', (_event, bounds) => {
+      if (this.customMenuManager?.isMenuVisible()) {
+        this.customMenuManager.hideMenu();
+      } else {
+        this.customMenuManager?.showMenu(bounds);
+      }
+    });
   }
 
   /**
@@ -48,127 +57,20 @@ export class TrayManager {
     this.currentCountdown = countdown;
     if (this.tray) {
       this.tray.setToolTip(`Praymodoro - ${countdown}`);
-      // Update menu to reflect new countdown
-      this.updateContextMenu();
     }
-  }
-
-  /**
-   * Update context menu
-   */
-  private updateContextMenu(): void {
-    if (!this.tray) return;
-
-    const isVisible = this.windowManager.isVisible();
-    const currentScale = this.windowManager.getScale();
-    const scalePercent = Math.round(currentScale * 100);
-
-    const menu = Menu.buildFromTemplate([
-      {
-        label: `Time Remaining: ${this.currentCountdown}`,
-        enabled: false,
-      },
-      { type: 'separator' },
-      {
-        label: isVisible ? 'Hide Character' : 'Show Character',
-        click: () => {
-          this.windowManager.toggleWindow();
-          // Update menu after toggle
-          setTimeout(() => this.updateContextMenu(), 100);
-        },
-      },
-      { type: 'separator' },
-      {
-        label: `Size: ${scalePercent}%`,
-        enabled: false,
-      },
-      {
-        label: 'Increase Size',
-        click: () => {
-          const newScale = currentScale + 0.1;
-          this.windowManager.setScale(newScale);
-          this.settingsManager.saveScale(newScale);
-          this.updateContextMenu();
-          // Reopen menu so user can continue resizing
-          if (this.tray) {
-            setTimeout(() => this.tray?.popUpContextMenu(), 50);
-          }
-        },
-      },
-      {
-        label: 'Decrease Size',
-        click: () => {
-          const newScale = currentScale - 0.1;
-          this.windowManager.setScale(newScale);
-          this.settingsManager.saveScale(newScale);
-          this.updateContextMenu();
-          // Reopen menu so user can continue resizing
-          if (this.tray) {
-            setTimeout(() => this.tray?.popUpContextMenu(), 50);
-          }
-        },
-      },
-      { type: 'separator' },
-      {
-        label: `Character: ${this.formatCharacterName(this.settingsManager.getCharacter())}`,
-        enabled: false,
-      },
-      {
-        label: 'Next Character',
-        click: () => {
-          this.cycleCharacter();
-          this.updateContextMenu();
-          if (this.tray) {
-            setTimeout(() => this.tray?.popUpContextMenu(), 50);
-          }
-        },
-      },
-      { type: 'separator' },
-      {
-        label: 'Quit',
-        click: () => {
-          app.quit();
-        },
-      },
-    ]);
-
-    this.tray.setContextMenu(menu);
-  }
-
-  /**
-   * Show context menu
-   */
-  private showContextMenu(): void {
-    this.updateContextMenu();
-  }
-
-  /**
-   * Format character name for display
-   */
-  private formatCharacterName(name: CharacterName): string {
-    return name
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  }
-
-  /**
-   * Cycle to next character
-   */
-  private cycleCharacter(): void {
-    const currentCharacter = this.settingsManager.getCharacter();
-    const currentIndex = AVAILABLE_CHARACTERS.indexOf(currentCharacter);
-    const nextIndex = (currentIndex + 1) % AVAILABLE_CHARACTERS.length;
-    const nextCharacter = AVAILABLE_CHARACTERS[nextIndex];
-
-    this.settingsManager.saveCharacter(nextCharacter);
-    this.windowManager.updateCharacter(nextCharacter);
+    if (this.customMenuManager) {
+      this.customMenuManager.updateCountdown(countdown);
+    }
   }
 
   /**
    * Destroy tray
    */
   destroy(): void {
+    if (this.customMenuManager) {
+      this.customMenuManager.destroy();
+      this.customMenuManager = null;
+    }
     if (this.tray) {
       this.tray.destroy();
       this.tray = null;

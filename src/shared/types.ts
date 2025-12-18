@@ -13,7 +13,7 @@ export interface PomodoroState {
   remaining: number; // seconds remaining in current period
 }
 
-export type CharacterName = 'augustine-of-hippo' | 'thomas-aquinas';
+export type CharacterName = 'augustine-of-hippo' | 'thomas-aquinas' | 'saint-patrick';
 
 export interface Settings {
   window: {
@@ -39,4 +39,26 @@ export const IPC_CHANNELS = {
   SAVE_POSITION: 'save-position',
   GET_SETTINGS: 'get-settings',
   SAVE_SETTINGS: 'save-settings',
+
+  // Menu IPC
+  MENU_GET_STATE: 'menu-get-state',
+  MENU_ACTION: 'menu-action',
+  MENU_CLOSE: 'menu-close',
+  MENU_TIME_UPDATE: 'menu-time-update',
 } as const;
+
+// Menu state sent to the custom menu window
+export interface MenuState {
+  countdown: string;
+  isCharacterVisible: boolean;
+  scale: number;
+  character: CharacterName;
+}
+
+// Menu actions
+export type MenuAction =
+  | { type: 'toggle-character' }
+  | { type: 'increase-size' }
+  | { type: 'decrease-size' }
+  | { type: 'next-character' }
+  | { type: 'quit' };

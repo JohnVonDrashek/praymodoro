@@ -72,6 +72,14 @@ const config: ForgeConfig = {
               js: './src/preload.ts',
             },
           },
+          {
+            html: './src/menu/menu.html',
+            js: './src/menu/menu-renderer.ts',
+            name: 'menu_window',
+            preload: {
+              js: './src/menu/menu-preload.ts',
+            },
+          },
         ],
       },
     }),
