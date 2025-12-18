@@ -16,6 +16,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: './assets/icons/Praymodoro',
+    executableName: 'praymodoro',
     // Code signing for macOS - requires environment variables:
     // APPLE_TEAM_ID: Your Apple Developer Team ID
     // APPLE_ID: Your Apple ID email
