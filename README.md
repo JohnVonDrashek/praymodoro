@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-macOS-blue" alt="Platform: macOS">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue" alt="Platform: macOS | Windows">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT">
   <img src="https://img.shields.io/badge/electron-39.x-9feaf9" alt="Electron 39.x">
 </p>
@@ -94,7 +94,7 @@ npm start
 # Package the app
 npm run package
 
-# Create distributable (DMG on macOS)
+# Create distributable (DMG on macOS, EXE on Windows)
 npm run make
 ```
 
