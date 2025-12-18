@@ -18,13 +18,30 @@
 
 Praymodoro is a desktop Pomodoro timer that keeps you focused and faithful. A charming saint companion lives on your desktop, reading alongside you during work sessions and pausing to pray during breaks.
 
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="assets/characters/augustine-of-hippo/work.png" alt="St. Augustine of Hippo" height="250"><br>
+      <strong>St. Augustine of Hippo</strong>
+    </td>
+    <td align="center">
+      <img src="assets/characters/thomas-aquinas/work.png" alt="St. Thomas Aquinas" height="250"><br>
+      <strong>St. Thomas Aquinas</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/characters/saint-patrick/work.png" alt="St. Patrick" height="250"><br>
+      <strong>St. Patrick</strong>
+    </td>
+    <td align="center">
+      <img src="assets/characters/thomas-more/work.png" alt="St. Thomas More" height="250"><br>
+      <strong>St. Thomas More</strong>
+    </td>
+  </tr>
+</table>
 <p align="center">
-  <img src="assets/characters/augustine-of-hippo/work.png" alt="St. Augustine - Work Mode" height="300">
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="assets/characters/augustine-of-hippo/quick-break.png" alt="St. Augustine - Break Mode" height="300">
-</p>
-<p align="center">
-  <em>St. Augustine of Hippo: studying during work, praying during breaks</em>
+  <em>Choose your study companion — they read during work and pray during breaks</em>
 </p>
 
 ## Features
