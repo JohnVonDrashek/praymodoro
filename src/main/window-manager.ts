@@ -197,6 +197,9 @@ export class WindowManager {
 
       // Resize window (keeps top-left corner in same position)
       this.window.setSize(scaledWidth, scaledHeight);
+
+      // Notify renderer of scale change
+      this.window.webContents.send(IPC_CHANNELS.SCALE_CHANGE, this.scale);
     }
   }
 

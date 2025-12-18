@@ -18,6 +18,11 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on(IPC_CHANNELS.CHARACTER_CHANGE, (_event, character) => callback(character));
   },
 
+  // Listen for scale changes
+  onScaleChange: (callback: (scale: number) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.SCALE_CHANGE, (_event, scale) => callback(scale));
+  },
+
   // Send hide window request
   hideWindow: () => {
     ipcRenderer.send(IPC_CHANNELS.HIDE_WINDOW);
@@ -46,6 +51,7 @@ declare global {
       onTimeUpdate: (callback: (data: PomodoroState & { formattedTime: string }) => void) => void;
       onPeriodChange: (callback: (mode: PomodoroMode) => void) => void;
       onCharacterChange: (callback: (character: CharacterName) => void) => void;
+      onScaleChange: (callback: (scale: number) => void) => void;
       hideWindow: () => void;
       savePosition: (x: number, y: number) => void;
       getSettings: () => Promise<Settings>;

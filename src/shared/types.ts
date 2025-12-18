@@ -33,6 +33,7 @@ export const IPC_CHANNELS = {
   TIME_UPDATE: 'time-update',
   PERIOD_CHANGE: 'period-change',
   CHARACTER_CHANGE: 'character-change',
+  SCALE_CHANGE: 'scale-change',
 
   // Renderer -> Main
   HIDE_WINDOW: 'hide-window',

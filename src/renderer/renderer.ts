@@ -34,6 +34,11 @@ window.api.onCharacterChange((character) => {
   updateCharacterImage();
 });
 
+// Listen for scale changes
+window.api.onScaleChange((scale) => {
+  document.documentElement.style.setProperty('--scale', scale.toString());
+});
+
 // Update character image based on current mode and character
 function updateCharacterImage(): void {
   const imageName = currentMode === 'work' ? 'work.png' : 'quick-break.png';
@@ -90,6 +95,8 @@ function saveCurrentPosition(): void {
 async function init() {
   const settings = await window.api.getSettings();
   currentCharacter = settings.character;
+  // Set initial scale
+  document.documentElement.style.setProperty('--scale', settings.window.scale.toString());
   updateMode(currentMode);
   console.log('Praymodoro renderer loaded');
 }
