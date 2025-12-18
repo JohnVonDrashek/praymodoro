@@ -13,7 +13,7 @@ export const POMODORO_SEGMENTS: PomodoroSegment[] = [
 ];
 
 // Available characters
-export const AVAILABLE_CHARACTERS: CharacterName[] = ['augustine-of-hippo', 'thomas-aquinas', 'saint-patrick'];
+export const AVAILABLE_CHARACTERS: CharacterName[] = ['augustine-of-hippo', 'thomas-aquinas', 'saint-patrick', 'thomas-more'];
 
 // Default settings
 export const DEFAULT_SETTINGS = {

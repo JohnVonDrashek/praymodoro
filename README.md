@@ -45,6 +45,8 @@ Praymodoro is a desktop Pomodoro timer that keeps you focused and faithful. A ch
 - **Saint Characters** - Choose your study companion:
   - St. Augustine of Hippo
   - St. Thomas Aquinas
+  - St. Patrick
+  - St. Thomas More
 
 - **Minimal & Unobtrusive** - Designed to help you focus, not distract
 

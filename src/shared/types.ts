@@ -13,7 +13,7 @@ export interface PomodoroState {
   remaining: number; // seconds remaining in current period
 }
 
-export type CharacterName = 'augustine-of-hippo' | 'thomas-aquinas' | 'saint-patrick';
+export type CharacterName = 'augustine-of-hippo' | 'thomas-aquinas' | 'saint-patrick' | 'thomas-more';
 
 export interface Settings {
   window: {
