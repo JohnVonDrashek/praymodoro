@@ -38,10 +38,9 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({
-      iconUrl: 'https://raw.githubusercontent.com/your-repo/main/assets/icons/Praymodoro.ico',
       setupIcon: './assets/icons/Praymodoro.ico',
     }),
-    new MakerZIP({}, ['darwin']),
+    new MakerZIP({}),
     new MakerDMG({
       icon: './assets/icons/Praymodoro.icns',
       format: 'ULFO',

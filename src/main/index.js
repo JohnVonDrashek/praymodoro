@@ -63,9 +63,9 @@ function createApp() {
   // Start time tracking
   timeController.start();
 
-  // Hide dock icon if setting is enabled
-  if (settings.showInDock === false && app.dock) {
-    app.dock.hide();
+  // Hide dock icon if setting is enabled (macOS only)
+  if (settings.showInDock === false) {
+    app.dock?.hide();
   }
 }
 
