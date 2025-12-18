@@ -143,7 +143,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <em>"Pray as though everything depended on God. Work as though everything depended on you."</em>
+  <em>"Thou hast made us for thyself, O Lord, and our heart is restless until it finds its rest in thee."</em>
   <br>
-  <strong>— St. Augustine of Hippo</strong>
+  <strong>— St. Augustine of Hippo, Confessions</strong>
 </p>
