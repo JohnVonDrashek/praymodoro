@@ -124,8 +124,11 @@ export class CustomMenuManager {
       alwaysOnTop: true,
       skipTaskbar: true,
       show: false,
-      vibrancy: 'menu',
-      visualEffectState: 'active',
+      // macOS-only visual effects
+      ...(process.platform === 'darwin' && {
+        vibrancy: 'menu',
+        visualEffectState: 'active',
+      }),
       webPreferences: {
         preload: MENU_WINDOW_PRELOAD_WEBPACK_ENTRY,
         nodeIntegration: false,
