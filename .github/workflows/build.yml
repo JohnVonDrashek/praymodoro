@@ -163,3 +163,71 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-homebrew:
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-build
+          path: artifacts
+
+      - name: Calculate SHA256
+        id: sha
+        run: |
+          SHA=$(sha256sum artifacts/Praymodoro-${{ steps.version.outputs.version }}-arm64.dmg | cut -d' ' -f1)
+          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: JohnVonDrashek/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update cask formula
+        run: |
+          cat > homebrew-tap/Casks/praymodoro.rb << EOF
+          cask "praymodoro" do
+            version "${{ steps.version.outputs.version }}"
+            sha256 "${{ steps.sha.outputs.sha256 }}"
+
+            url "https://github.com/JohnVonDrashek/praymodoro/releases/latest/download/Praymodoro-#{version}-arm64.dmg"
+            name "Praymodoro"
+            desc "Prayerful Pomodoro timer with Catholic saints as desktop companions"
+            homepage "https://github.com/JohnVonDrashek/praymodoro"
+
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+
+            app "Praymodoro.app"
+
+            zap trash: [
+              "~/Library/Application Support/Praymodoro",
+              "~/Library/Preferences/com.electron.praymodoro.plist",
+              "~/Library/Saved Application State/com.electron.praymodoro.savedState",
+            ]
+          end
+          EOF
+
+      - name: Commit and push
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/praymodoro.rb
+          git commit -m "Update praymodoro to ${{ steps.version.outputs.version }}"
+          git push
