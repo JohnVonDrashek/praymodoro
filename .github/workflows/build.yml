@@ -54,13 +54,16 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+        run: |
+          BASE_VERSION=$(node -p "require('./package.json').version")
+          echo "version=${BASE_VERSION}+${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "base_version=${BASE_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: Praymodoro v${{ steps.version.outputs.version }}
+          name: Praymodoro v${{ steps.version.outputs.base_version }} (Build ${{ github.run_number }})
           files: out/make/*.dmg
           draft: false
           prerelease: false
