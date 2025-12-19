@@ -20,43 +20,27 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Import signing certificate
+      - name: Build with Tauri
         env:
-          CERTIFICATE_P12_BASE64: ${{ secrets.CERTIFICATE_P12_BASE64 }}
-          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
-        run: |
-          # Create temporary keychain
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-
-          # Create keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # Import certificate
-          echo "$CERTIFICATE_P12_BASE64" | base64 --decode > $RUNNER_TEMP/certificate.p12
-          security import $RUNNER_TEMP/certificate.p12 -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # Add to search list
-          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
-
-      - name: Build and sign
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_CERTIFICATE: ${{ secrets.CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: "Developer ID Application: JOHN THOMAS VONDRASHEK (${{ secrets.APPLE_TEAM_ID }})"
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-        run: npm run make
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run tauri:build
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: out/make/*.dmg
+          path: src-tauri/target/release/bundle/dmg/*.dmg
 
   build-windows:
     runs-on: windows-latest
@@ -186,7 +170,7 @@ jobs:
       - name: Calculate SHA256
         id: sha
         run: |
-          SHA=$(sha256sum artifacts/Praymodoro-${{ steps.version.outputs.version }}-arm64.dmg | cut -d' ' -f1)
+          SHA=$(sha256sum artifacts/Praymodoro_${{ steps.version.outputs.version }}_aarch64.dmg | cut -d' ' -f1)
           echo "sha256=$SHA" >> $GITHUB_OUTPUT
 
       - name: Checkout homebrew-tap
@@ -203,7 +187,7 @@ jobs:
             version "${{ steps.version.outputs.version }}"
             sha256 "${{ steps.sha.outputs.sha256 }}"
 
-            url "https://github.com/JohnVonDrashek/praymodoro/releases/latest/download/Praymodoro-#{version}-arm64.dmg"
+            url "https://github.com/JohnVonDrashek/praymodoro/releases/latest/download/Praymodoro_#{version}_aarch64.dmg"
             name "Praymodoro"
             desc "Prayerful Pomodoro timer with Catholic saints as desktop companions"
             homepage "https://github.com/JohnVonDrashek/praymodoro"
@@ -217,8 +201,8 @@ jobs:
 
             zap trash: [
               "~/Library/Application Support/Praymodoro",
-              "~/Library/Preferences/com.electron.praymodoro.plist",
-              "~/Library/Saved Application State/com.electron.praymodoro.savedState",
+              "~/Library/Preferences/com.praymodoro.timer.plist",
+              "~/Library/Saved Application State/com.praymodoro.timer.savedState",
             ]
           end
           EOF
