@@ -65,8 +65,10 @@
     }
 
     .menu-item.size-row,
-    .menu-item.size-row:hover {
-      background: transparent;
+    .menu-item.size-row:hover,
+    .menu-item.character-row,
+    .menu-item.character-row:hover {
+      background: transparent !important;
       color: inherit;
       cursor: default;
     }
@@ -97,13 +99,6 @@
     .size-btn.disabled {
       opacity: 0.35;
       pointer-events: none;
-    }
-
-    .menu-item.character-row,
-    .menu-item.character-row:hover {
-      background: transparent;
-      color: inherit;
-      cursor: default;
     }
 
     .character-controls {
@@ -176,6 +171,14 @@
       .char-btn:hover {
         background: #0a84ff;
         color: #fff;
+      }
+
+      .menu-item.size-row,
+      .menu-item.size-row:hover,
+      .menu-item.character-row,
+      .menu-item.character-row:hover {
+        background: transparent !important;
+        color: rgba(255, 255, 255, 0.9);
       }
     }
   </style>
