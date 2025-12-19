@@ -3,7 +3,7 @@ import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
-import { MakerDMG } from '@electron-forge/maker-dmg';
+// MakerDMG removed - macOS builds now use Tauri
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { WebpackPlugin } from '@electron-forge/plugin-webpack';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
@@ -41,11 +41,7 @@ const config: ForgeConfig = {
     new MakerSquirrel({
       setupIcon: './assets/icons/Praymodoro.ico',
     }),
-    new MakerZIP({}),
-    new MakerDMG({
-      icon: './assets/icons/Praymodoro.icns',
-      format: 'ULFO',
-    }),
+    new MakerZIP({}, ['win32']),
     new MakerRpm({
       options: {
         icon: './assets/icons/Praymodoro.png',
