@@ -156,6 +156,9 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
       - name: Get version from Cargo.toml
         id: version
         working-directory: src-egui
@@ -168,7 +171,7 @@ jobs:
         working-directory: src-egui
         run: cargo build --release
 
-      - name: Create distribution folder
+      - name: Create portable ZIP
         working-directory: src-egui
         shell: bash
         run: |
@@ -190,13 +193,23 @@ jobs:
         shell: pwsh
         run: |
           $VERSION = "${{ steps.version.outputs.version }}"
-          Compress-Archive -Path "Praymodoro-${VERSION}-windows" -DestinationPath "Praymodoro_${VERSION}_windows.zip"
+          Compress-Archive -Path "Praymodoro-${VERSION}-windows" -DestinationPath "Praymodoro_${VERSION}_windows_portable.zip"
+
+      - name: Build installer with Inno Setup
+        working-directory: src-egui/windows
+        shell: cmd
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: src-egui/target/release/*.zip
+          path: |
+            src-egui/target/release/*.zip
+            src-egui/target/release/*_setup.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -301,6 +314,7 @@ jobs:
           files: |
             artifacts/macos/*.dmg
             artifacts/windows/*.zip
+            artifacts/windows/*_setup.exe
             artifacts/linux/*.tar.gz
           draft: false
           prerelease: false

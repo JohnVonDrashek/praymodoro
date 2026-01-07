@@ -215,10 +215,17 @@ impl eframe::App for PrayomodoroApp {
 
         // Central panel with transparent background
         egui::CentralPanel::default()
-            .frame(egui::Frame::none())
+            .frame(egui::Frame::NONE)
             .show(ctx, |ui| {
+                // Use expected size based on scale, not available_size which can be wrong on first frame
+                let expected_size = Vec2::new(BASE_WIDTH * scale, BASE_HEIGHT * scale);
                 let available_size = ui.available_size();
-                let rect = Rect::from_min_size(Pos2::ZERO, available_size);
+                // Use the larger of expected or available to avoid tiny sprites on startup
+                let size = Vec2::new(
+                    available_size.x.max(expected_size.x),
+                    available_size.y.max(expected_size.y),
+                );
+                let rect = Rect::from_min_size(Pos2::ZERO, size);
 
                 // Handle dragging - use native OS drag for smooth movement
                 let response = ui.allocate_rect(rect, Sense::drag());
@@ -231,7 +238,7 @@ impl eframe::App for PrayomodoroApp {
                 // Clear the entire window area first (fixes ghosting on transparent windows)
                 ui.painter().rect_filled(
                     rect,
-                    egui::Rounding::ZERO,
+                    egui::CornerRadius::ZERO,
                     Color32::TRANSPARENT,
                 );
 
@@ -241,13 +248,13 @@ impl eframe::App for PrayomodoroApp {
                     let aspect = image_size.x / image_size.y;
 
                     // Scale to fit window while maintaining aspect ratio
-                    let target_height = available_size.y * 0.85; // Leave room for timer
+                    let target_height = size.y * 0.85; // Leave room for timer
                     let target_width = target_height * aspect;
 
-                    let sprite_size = Vec2::new(target_width.min(available_size.x), target_height);
+                    let sprite_size = Vec2::new(target_width.min(size.x), target_height);
                     let sprite_pos = Pos2::new(
-                        (available_size.x - sprite_size.x) / 2.0,
-                        available_size.y - sprite_size.y,
+                        (size.x - sprite_size.x) / 2.0,
+                        size.y - sprite_size.y,
                     );
 
                     ui.painter().image(
@@ -266,8 +273,8 @@ impl eframe::App for PrayomodoroApp {
 
                 let timer_rect = Rect::from_min_size(
                     Pos2::new(
-                        (available_size.x - timer_width) / 2.0,
-                        available_size.y - timer_height - timer_bottom_margin,
+                        (size.x - timer_width) / 2.0,
+                        size.y - timer_height - timer_bottom_margin,
                     ),
                     Vec2::new(timer_width, timer_height),
                 );
