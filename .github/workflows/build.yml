@@ -7,6 +7,9 @@ on:
 permissions:
   contents: write
 
+env:
+  APP_NAME: "Praymodoro"
+
 jobs:
   build-macos:
     runs-on: macos-latest
@@ -14,104 +17,155 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install create-dmg
+        run: brew install create-dmg
 
-      - name: Build with Tauri
+      - name: Get version from Cargo.toml
+        id: version
+        working-directory: src-egui
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build release binary (arm64)
+        working-directory: src-egui
+        run: cargo build --release --target aarch64-apple-darwin
+
+      - name: Build release binary (x86_64)
+        working-directory: src-egui
+        run: cargo build --release --target x86_64-apple-darwin
+
+      - name: Create universal binary
+        working-directory: src-egui
+        run: |
+          mkdir -p target/release
+          lipo -create \
+            target/aarch64-apple-darwin/release/praymodoro \
+            target/x86_64-apple-darwin/release/praymodoro \
+            -output target/release/praymodoro
+
+      - name: Create app bundle
+        working-directory: src-egui
+        run: |
+          APP_DIR="target/release/${APP_NAME}.app"
+          CONTENTS_DIR="${APP_DIR}/Contents"
+          MACOS_DIR="${CONTENTS_DIR}/MacOS"
+          RESOURCES_DIR="${CONTENTS_DIR}/Resources"
+
+          rm -rf "${APP_DIR}"
+          mkdir -p "${MACOS_DIR}"
+          mkdir -p "${RESOURCES_DIR}"
+
+          cp "target/release/praymodoro" "${MACOS_DIR}/"
+          cp "macos/Info.plist" "${CONTENTS_DIR}/"
+          cp "assets/icons/Praymodoro.icns" "${RESOURCES_DIR}/"
+
+          mkdir -p "${RESOURCES_DIR}/assets"
+          cp -r "assets/characters" "${RESOURCES_DIR}/assets/"
+          cp -r "assets/ui" "${RESOURCES_DIR}/assets/"
+          cp -r "assets/fonts" "${RESOURCES_DIR}/assets/"
+
+      - name: Import code signing certificate
         env:
           APPLE_CERTIFICATE: ${{ secrets.CERTIFICATE_P12_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
+          rm certificate.p12
+
+      - name: Sign app bundle
+        working-directory: src-egui
+        env:
           APPLE_SIGNING_IDENTITY: "Developer ID Application: JOHN THOMAS VONDRASHEK (${{ secrets.APPLE_TEAM_ID }})"
+        run: |
+          codesign --force --deep --sign "$APPLE_SIGNING_IDENTITY" \
+            --options runtime \
+            --entitlements macos/entitlements.plist \
+            "target/release/${APP_NAME}.app"
+
+      - name: Notarize app
+        working-directory: src-egui
+        env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npm run tauri:build
+        run: |
+          # Create zip for notarization
+          ditto -c -k --keepParent "target/release/${APP_NAME}.app" "target/release/${APP_NAME}.zip"
+
+          # Submit for notarization
+          xcrun notarytool submit "target/release/${APP_NAME}.zip" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          # Staple the notarization ticket
+          xcrun stapler staple "target/release/${APP_NAME}.app"
+
+          rm "target/release/${APP_NAME}.zip"
+
+      - name: Create DMG
+        working-directory: src-egui
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DMG_NAME="${APP_NAME}_${VERSION}_universal.dmg"
+
+          create-dmg \
+            --volname "${APP_NAME}" \
+            --volicon "assets/icons/Praymodoro.icns" \
+            --window-size 500 350 \
+            --icon-size 128 \
+            --icon "${APP_NAME}.app" 150 175 \
+            --app-drop-link 350 175 \
+            --hide-extension "${APP_NAME}.app" \
+            "target/release/${DMG_NAME}" \
+            "target/release/${APP_NAME}.app"
+
+      - name: Save version for other jobs
+        run: echo "${{ steps.version.outputs.version }}" > version.txt
+
+      - name: Upload version file
+        uses: actions/upload-artifact@v4
+        with:
+          name: version
+          path: version.txt
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: src-tauri/target/release/bundle/dmg/*.dmg
+          path: src-egui/target/release/*.dmg
 
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run make
-
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build
-          path: |
-            out/make/squirrel.windows/**/*.exe
-            out/make/zip/win32/**/*.zip
-
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Linux build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y dpkg fakeroot rpm
-
-      - name: Build
-        run: npm run make
-
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build
-          path: |
-            out/make/deb/**/*.deb
-            out/make/rpm/**/*.rpm
+  # Windows and Linux builds will be added later
+  # build-windows:
+  # build-linux:
 
   release:
-    needs: [build-macos, build-windows, build-linux]
+    needs: [build-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download version file
+        uses: actions/download-artifact@v4
+        with:
+          name: version
 
       - name: Get version
         id: version
-        run: |
-          BASE_VERSION=$(node -p "require('./package.json').version")
-          echo "version=${BASE_VERSION}+${{ github.run_number }}" >> $GITHUB_OUTPUT
-          echo "base_version=${BASE_VERSION}" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
 
       - name: Download macOS artifacts
         uses: actions/download-artifact@v4
@@ -119,29 +173,13 @@ jobs:
           name: macos-build
           path: artifacts/macos
 
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-build
-          path: artifacts/windows
-
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-build
-          path: artifacts/linux
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Praymodoro v${{ steps.version.outputs.base_version }} (Build ${{ github.run_number }})
+          tag_name: v${{ steps.version.outputs.version }}+${{ github.run_number }}
+          name: Praymodoro v${{ steps.version.outputs.version }} (Build ${{ github.run_number }})
           files: |
             artifacts/macos/*.dmg
-            artifacts/windows/**/*.exe
-            artifacts/windows/**/*.zip
-            artifacts/linux/**/*.deb
-            artifacts/linux/**/*.rpm
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -155,11 +193,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Download version file
+        uses: actions/download-artifact@v4
+        with:
+          name: version
+
       - name: Get version
         id: version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
@@ -170,7 +211,8 @@ jobs:
       - name: Calculate SHA256
         id: sha
         run: |
-          SHA=$(sha256sum artifacts/Praymodoro_${{ steps.version.outputs.version }}_aarch64.dmg | cut -d' ' -f1)
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA=$(sha256sum "artifacts/Praymodoro_${VERSION}_universal.dmg" | cut -d' ' -f1)
           echo "sha256=$SHA" >> $GITHUB_OUTPUT
 
       - name: Checkout homebrew-tap
@@ -182,12 +224,14 @@ jobs:
 
       - name: Update cask formula
         run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA="${{ steps.sha.outputs.sha256 }}"
           cat > homebrew-tap/Casks/praymodoro.rb << EOF
           cask "praymodoro" do
-            version "${{ steps.version.outputs.version }}"
-            sha256 "${{ steps.sha.outputs.sha256 }}"
+            version "${VERSION}"
+            sha256 "${SHA}"
 
-            url "https://github.com/JohnVonDrashek/praymodoro/releases/latest/download/Praymodoro_#{version}_aarch64.dmg"
+            url "https://github.com/JohnVonDrashek/praymodoro/releases/latest/download/Praymodoro_#{version}_universal.dmg"
             name "Praymodoro"
             desc "Prayerful Pomodoro timer with Catholic saints as desktop companions"
             homepage "https://github.com/JohnVonDrashek/praymodoro"
@@ -200,9 +244,8 @@ jobs:
             app "Praymodoro.app"
 
             zap trash: [
-              "~/Library/Application Support/Praymodoro",
-              "~/Library/Preferences/com.praymodoro.timer.plist",
-              "~/Library/Saved Application State/com.praymodoro.timer.savedState",
+              "~/Library/Application Support/praymodoro",
+              "~/Library/Preferences/com.praymodoro.app.plist",
             ]
           end
           EOF

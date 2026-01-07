@@ -1,0 +1,33 @@
+[package]
+name = "praymodoro"
+version = "1.0.2"
+edition = "2021"
+authors = ["John VonDrashek"]
+description = "A prayerful Pomodoro timer with adorable saint companions"
+license = "MIT"
+
+[dependencies]
+eframe = { version = "0.33", features = ["persistence"] }
+egui = "0.33"
+egui_extras = { version = "0.33", features = ["image"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+tray-icon = "0.19"
+muda = "0.15"
+chrono = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+directories = "5.0"
+parking_lot = "0.12"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.26"
+objc = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
+
+[[bin]]
+name = "praymodoro"
+path = "src/main.rs"
