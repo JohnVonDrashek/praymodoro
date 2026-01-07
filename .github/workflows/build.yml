@@ -147,12 +147,61 @@ jobs:
           name: macos-build
           path: src-egui/target/release/*.dmg
 
-  # Windows and Linux builds will be added later
-  # build-windows:
-  # build-linux:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Get version from Cargo.toml
+        id: version
+        working-directory: src-egui
+        shell: bash
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build release binary
+        working-directory: src-egui
+        run: cargo build --release
+
+      - name: Create distribution folder
+        working-directory: src-egui
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DIST_DIR="target/release/Praymodoro-${VERSION}-windows"
+
+          mkdir -p "${DIST_DIR}"
+          cp "target/release/praymodoro.exe" "${DIST_DIR}/"
+          cp "assets/icons/Praymodoro.ico" "${DIST_DIR}/"
+
+          # Copy assets
+          mkdir -p "${DIST_DIR}/assets"
+          cp -r "assets/characters" "${DIST_DIR}/assets/"
+          cp -r "assets/ui" "${DIST_DIR}/assets/"
+          cp -r "assets/fonts" "${DIST_DIR}/assets/"
+
+      - name: Create ZIP archive
+        working-directory: src-egui/target/release
+        shell: pwsh
+        run: |
+          $VERSION = "${{ steps.version.outputs.version }}"
+          Compress-Archive -Path "Praymodoro-${VERSION}-windows" -DestinationPath "Praymodoro_${VERSION}_windows.zip"
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: src-egui/target/release/*.zip
+
+  # build-linux: (coming next)
 
   release:
-    needs: [build-macos]
+    needs: [build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -173,6 +222,12 @@ jobs:
           name: macos-build
           path: artifacts/macos
 
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+          path: artifacts/windows
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -180,6 +235,7 @@ jobs:
           name: Praymodoro v${{ steps.version.outputs.version }} (Build ${{ github.run_number }})
           files: |
             artifacts/macos/*.dmg
+            artifacts/windows/*.zip
           draft: false
           prerelease: false
           generate_release_notes: true
