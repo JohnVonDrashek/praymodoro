@@ -1,32 +1,61 @@
+//! System tray icon management with context menu.
+//!
+//! Provides a system tray icon that allows users to:
+//! - View the countdown timer
+//! - Toggle character visibility
+//! - Change character size (50% to 200%)
+//! - Switch between saint characters
+//! - Quit the application
+
 use crate::state::{AppState, PomodoroMode, AVAILABLE_CHARACTERS};
 use muda::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use parking_lot::Mutex;
 use std::sync::Arc;
 use tray_icon::{Icon, TrayIcon, TrayIconBuilder};
 
+/// Actions that can be triggered from the tray menu.
 #[derive(Clone, Debug)]
 pub enum TrayAction {
+    /// No action.
     None,
+    /// Toggle the visibility of the character window.
     ToggleVisibility,
+    /// Change the selected saint character.
     SetCharacter(String),
+    /// Change the window scale (0.5 to 2.0).
     SetScale(f32),
+    /// Quit the application.
     Quit,
 }
 
+/// Manages the system tray icon and its context menu.
+///
+/// The tray icon displays a tomato icon and provides a context menu for
+/// controlling the application. Menu items are automatically updated to
+/// reflect the current application state.
 pub struct TrayManager {
     _tray: TrayIcon,
-    // Menu items that need updating
+    /// Menu item showing the countdown timer.
     countdown_item: MenuItem,
+    /// Checkbox to show/hide the character window.
     show_check: CheckMenuItem,
-    // Size check items
+    /// Size option checkboxes (50%, 75%, 100%, 125%, 150%, 200%).
     size_checks: Vec<(f32, CheckMenuItem)>,
-    // Character check items
+    /// Character selection checkboxes.
     char_checks: Vec<(String, CheckMenuItem)>,
-    // Action IDs
+    /// Menu ID for the quit action.
     quit_id: muda::MenuId,
 }
 
 impl TrayManager {
+    /// Creates a new tray icon with context menu.
+    ///
+    /// The menu is constructed with:
+    /// - Countdown display (updates automatically)
+    /// - Size submenu with percentage options
+    /// - Character submenu with available saints
+    /// - Show/hide checkbox
+    /// - Quit option
     pub fn new() -> Self {
         // Create menu items
         let countdown_item = MenuItem::new("Work for: 25:00", false, None);
@@ -87,6 +116,14 @@ impl TrayManager {
         }
     }
 
+    /// Polls for tray menu events and updates menu state.
+    ///
+    /// Should be called frequently (typically in the main UI update loop).
+    /// Returns any action that should be taken in response to menu interactions.
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - Current application state for updating menu checkboxes
     pub fn poll_events(&mut self, state: &Arc<Mutex<AppState>>) -> TrayAction {
         // Update countdown label
         {
@@ -143,6 +180,10 @@ impl TrayManager {
     }
 }
 
+/// Loads the tray icon from embedded assets.
+///
+/// Uses the `tray-iconTemplate@2x.png` which follows macOS naming conventions
+/// for template images (automatically adapts to dark/light mode).
 fn load_tray_icon() -> Icon {
     let icon_bytes = include_bytes!("../assets/tray-iconTemplate@2x.png");
     let image = image::load_from_memory(icon_bytes)
@@ -153,6 +194,16 @@ fn load_tray_icon() -> Icon {
     Icon::from_rgba(rgba, width, height).expect("Failed to create tray icon")
 }
 
+/// Formats a character identifier into a human-readable display name.
+///
+/// Converts kebab-case identifiers to Title Case, filtering out common words like "of".
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(format_character_name("augustine-of-hippo"), "Augustine Hippo");
+/// assert_eq!(format_character_name("thomas-aquinas"), "Thomas Aquinas");
+/// ```
 fn format_character_name(name: &str) -> String {
     name.split('-')
         .filter(|s| *s != "of")

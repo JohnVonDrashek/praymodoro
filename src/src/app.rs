@@ -1,3 +1,9 @@
+//! Main egui application for the Praymodoro desktop companion.
+//!
+//! This module handles the UI rendering, sprite loading, and user interactions
+//! through a transparent, draggable window that displays saint characters and
+//! a countdown timer.
+
 use crate::settings::save_settings;
 use crate::state::{AppState, PomodoroMode};
 use crate::tray::{TrayAction, TrayManager};
@@ -7,24 +13,43 @@ use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+/// Base width of the companion window in pixels.
 const BASE_WIDTH: f32 = 160.0;
+
+/// Base height of the companion window in pixels.
 const BASE_HEIGHT: f32 = 395.0;
 
-// Max texture dimensions - sprites are resized to this on load to save GPU memory
-// Original sprites are 590x1455, but we display at ~135x335 base (scaled by user preference)
-// 295x728 is half size, still crisp at 200% scale
+/// Maximum width for sprite textures loaded into GPU memory.
+///
+/// Original sprites are 590x1455, but we resize to 295x728 (half size)
+/// to save GPU memory while maintaining quality at up to 200% scale.
 const MAX_SPRITE_WIDTH: u32 = 295;
+
+/// Maximum height for sprite textures loaded into GPU memory.
 const MAX_SPRITE_HEIGHT: u32 = 728;
 
+/// The main egui application struct for Praymodoro.
+///
+/// Manages the UI rendering, sprite caching, tray icon integration, and
+/// responds to user interactions through both the window and tray menu.
 pub struct PrayomodoroApp {
+    /// Shared application state (synchronized with timer thread).
     state: Arc<Mutex<AppState>>,
+    /// System tray icon manager.
     tray: Option<TrayManager>,
+    /// Cached character sprite textures (key: "character_sprite").
     textures: HashMap<String, egui::TextureHandle>,
+    /// Cached timer background texture.
     timer_bg: Option<egui::TextureHandle>,
+    /// Last character name (used to detect character changes and clear caches).
     last_character: String,
 }
 
 impl PrayomodoroApp {
+    /// Creates a new Praymodoro application instance.
+    ///
+    /// Initializes the system tray icon and sets up the initial character.
+    /// Must be called on the main thread.
     pub fn new(state: Arc<Mutex<AppState>>) -> Self {
         // Create tray on main thread
         let tray = TrayManager::new();
@@ -43,6 +68,20 @@ impl PrayomodoroApp {
         }
     }
 
+    /// Loads a character sprite texture, with caching.
+    ///
+    /// Searches multiple locations for the sprite asset and resizes it to
+    /// [`MAX_SPRITE_WIDTH`] x [`MAX_SPRITE_HEIGHT`] to conserve GPU memory.
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx` - egui context for texture loading
+    /// * `character` - Character identifier (e.g., "augustine-of-hippo")
+    /// * `sprite` - Sprite name (e.g., "work", "quick-break", "idle")
+    ///
+    /// # Returns
+    ///
+    /// The texture handle if successfully loaded, or `None` if not found.
     fn load_texture(
         &mut self,
         ctx: &egui::Context,
@@ -104,6 +143,9 @@ impl PrayomodoroApp {
         None
     }
 
+    /// Loads the timer background texture from embedded assets.
+    ///
+    /// The timer background is cached after the first load.
     fn load_timer_bg(&mut self, ctx: &egui::Context) -> Option<egui::TextureHandle> {
         if let Some(ref tex) = self.timer_bg {
             return Some(tex.clone());
@@ -126,6 +168,10 @@ impl PrayomodoroApp {
         None
     }
 
+    /// Handles actions triggered from the system tray menu.
+    ///
+    /// Updates application state and sends viewport commands in response to
+    /// user interactions with the tray icon menu.
     fn handle_tray_action(&mut self, action: TrayAction, ctx: &egui::Context) {
         match action {
             TrayAction::ToggleVisibility => {

@@ -1,3 +1,9 @@
+//! Praymodoro - A Pomodoro timer with Catholic saints as desktop companions.
+//!
+//! This is the main entry point for the Praymodoro desktop application.
+//! The application uses egui for the UI, runs a background timer thread,
+//! and provides a system tray icon for control.
+
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app;
@@ -11,6 +17,10 @@ use parking_lot::Mutex;
 use state::AppState;
 use std::sync::Arc;
 
+/// Hides the application from the macOS Dock.
+///
+/// This makes the app behave as a menu bar utility rather than a regular application.
+/// The window remains functional, but there's no Dock icon.
 #[cfg(target_os = "macos")]
 fn hide_dock_icon() {
     use cocoa::appkit::{NSApp, NSApplication, NSApplicationActivationPolicy};
@@ -23,6 +33,9 @@ fn hide_dock_icon() {
 #[cfg(not(target_os = "macos"))]
 fn hide_dock_icon() {}
 
+/// Loads the application icon from embedded assets.
+///
+/// Returns icon data in RGBA format that egui can use for the window icon.
 fn load_app_icon() -> egui::IconData {
     let icon_bytes = include_bytes!("../assets/icons/icon.png");
     let image = image::load_from_memory(icon_bytes)
@@ -37,6 +50,10 @@ fn load_app_icon() -> egui::IconData {
     }
 }
 
+/// Application entry point.
+///
+/// Initializes the application state, spawns the timer thread, and launches
+/// the egui window with a transparent, draggable interface.
 fn main() {
     // Initialize shared state
     let state = Arc::new(Mutex::new(AppState::new()));
