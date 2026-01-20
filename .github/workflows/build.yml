@@ -27,21 +27,21 @@ jobs:
 
       - name: Get version from Cargo.toml
         id: version
-        working-directory: src-egui
+        working-directory: src
         run: |
           VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build release binary (arm64)
-        working-directory: src-egui
+        working-directory: src
         run: cargo build --release --target aarch64-apple-darwin
 
       - name: Build release binary (x86_64)
-        working-directory: src-egui
+        working-directory: src
         run: cargo build --release --target x86_64-apple-darwin
 
       - name: Create universal binary
-        working-directory: src-egui
+        working-directory: src
         run: |
           mkdir -p target/release
           lipo -create \
@@ -50,7 +50,7 @@ jobs:
             -output target/release/praymodoro
 
       - name: Create app bundle
-        working-directory: src-egui
+        working-directory: src
         run: |
           APP_DIR="target/release/${APP_NAME}.app"
           CONTENTS_DIR="${APP_DIR}/Contents"
@@ -84,7 +84,7 @@ jobs:
           rm certificate.p12
 
       - name: Sign app bundle
-        working-directory: src-egui
+        working-directory: src
         env:
           APPLE_SIGNING_IDENTITY: "Developer ID Application: JOHN THOMAS VONDRASHEK (${{ secrets.APPLE_TEAM_ID }})"
         run: |
@@ -94,7 +94,7 @@ jobs:
             "target/release/${APP_NAME}.app"
 
       - name: Notarize app
-        working-directory: src-egui
+        working-directory: src
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -116,7 +116,7 @@ jobs:
           rm "target/release/${APP_NAME}.zip"
 
       - name: Create DMG
-        working-directory: src-egui
+        working-directory: src
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           DMG_NAME="${APP_NAME}_${VERSION}_universal.dmg"
@@ -145,135 +145,139 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: src-egui/target/release/*.dmg
+          path: src/target/release/*.dmg
 
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # Disabled for now - macOS only builds
+  # Uncomment to enable Windows builds
+  # build-windows:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #
+  #     - name: Install Inno Setup
+  #       run: choco install innosetup -y
+  #
+  #     - name: Get version from Cargo.toml
+  #       id: version
+  #       working-directory: src
+  #       shell: bash
+  #       run: |
+  #         VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+  #         echo "version=$VERSION" >> $GITHUB_OUTPUT
+  #
+  #     - name: Build release binary
+  #       working-directory: src
+  #       run: cargo build --release
+  #
+  #     - name: Create portable ZIP
+  #       working-directory: src
+  #       shell: bash
+  #       run: |
+  #         VERSION="${{ steps.version.outputs.version }}"
+  #         DIST_DIR="target/release/Praymodoro-${VERSION}-windows"
+  #
+  #         mkdir -p "${DIST_DIR}"
+  #         cp "target/release/praymodoro.exe" "${DIST_DIR}/"
+  #         cp "assets/icons/Praymodoro.ico" "${DIST_DIR}/"
+  #
+  #         # Copy assets
+  #         mkdir -p "${DIST_DIR}/assets"
+  #         cp -r "assets/characters" "${DIST_DIR}/assets/"
+  #         cp -r "assets/ui" "${DIST_DIR}/assets/"
+  #         cp -r "assets/fonts" "${DIST_DIR}/assets/"
+  #
+  #     - name: Create ZIP archive
+  #       working-directory: src/target/release
+  #       shell: pwsh
+  #       run: |
+  #         $VERSION = "${{ steps.version.outputs.version }}"
+  #         Compress-Archive -Path "Praymodoro-${VERSION}-windows" -DestinationPath "Praymodoro_${VERSION}_windows_portable.zip"
+  #
+  #     - name: Build installer with Inno Setup
+  #       working-directory: src/windows
+  #       shell: cmd
+  #       env:
+  #         VERSION: ${{ steps.version.outputs.version }}
+  #       run: |
+  #         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+  #
+  #     - name: Upload Windows artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-build
+  #         path: |
+  #           src/target/release/*.zip
+  #           src/target/release/*_setup.exe
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Inno Setup
-        run: choco install innosetup -y
-
-      - name: Get version from Cargo.toml
-        id: version
-        working-directory: src-egui
-        shell: bash
-        run: |
-          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Build release binary
-        working-directory: src-egui
-        run: cargo build --release
-
-      - name: Create portable ZIP
-        working-directory: src-egui
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          DIST_DIR="target/release/Praymodoro-${VERSION}-windows"
-
-          mkdir -p "${DIST_DIR}"
-          cp "target/release/praymodoro.exe" "${DIST_DIR}/"
-          cp "assets/icons/Praymodoro.ico" "${DIST_DIR}/"
-
-          # Copy assets
-          mkdir -p "${DIST_DIR}/assets"
-          cp -r "assets/characters" "${DIST_DIR}/assets/"
-          cp -r "assets/ui" "${DIST_DIR}/assets/"
-          cp -r "assets/fonts" "${DIST_DIR}/assets/"
-
-      - name: Create ZIP archive
-        working-directory: src-egui/target/release
-        shell: pwsh
-        run: |
-          $VERSION = "${{ steps.version.outputs.version }}"
-          Compress-Archive -Path "Praymodoro-${VERSION}-windows" -DestinationPath "Praymodoro_${VERSION}_windows_portable.zip"
-
-      - name: Build installer with Inno Setup
-        working-directory: src-egui/windows
-        shell: cmd
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
-
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build
-          path: |
-            src-egui/target/release/*.zip
-            src-egui/target/release/*_setup.exe
-
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
-            libxkbcommon-dev libgtk-3-dev libatk1.0-dev libxdo-dev
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Get version from Cargo.toml
-        id: version
-        working-directory: src-egui
-        run: |
-          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Build release binary
-        working-directory: src-egui
-        run: cargo build --release
-
-      - name: Create distribution folder
-        working-directory: src-egui
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          DIST_DIR="target/release/praymodoro-${VERSION}-linux"
-
-          mkdir -p "${DIST_DIR}"
-          cp "target/release/praymodoro" "${DIST_DIR}/"
-
-          # Copy assets
-          mkdir -p "${DIST_DIR}/assets"
-          cp -r "assets/characters" "${DIST_DIR}/assets/"
-          cp -r "assets/ui" "${DIST_DIR}/assets/"
-          cp -r "assets/fonts" "${DIST_DIR}/assets/"
-
-          # Create simple run script
-          cat > "${DIST_DIR}/run.sh" << 'SCRIPT'
-          #!/bin/bash
-          cd "$(dirname "$0")"
-          ./praymodoro
-          SCRIPT
-          chmod +x "${DIST_DIR}/run.sh"
-
-      - name: Create tarball
-        working-directory: src-egui/target/release
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          tar -czvf "Praymodoro_${VERSION}_linux.tar.gz" "praymodoro-${VERSION}-linux"
-
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build
-          path: src-egui/target/release/*.tar.gz
+  # Disabled for now - macOS only builds
+  # Uncomment to enable Linux builds
+  # build-linux:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+  #           libxkbcommon-dev libgtk-3-dev libatk1.0-dev libxdo-dev
+  #
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #
+  #     - name: Get version from Cargo.toml
+  #       id: version
+  #       working-directory: src
+  #       run: |
+  #         VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+  #         echo "version=$VERSION" >> $GITHUB_OUTPUT
+  #
+  #     - name: Build release binary
+  #       working-directory: src
+  #       run: cargo build --release
+  #
+  #     - name: Create distribution folder
+  #       working-directory: src
+  #       run: |
+  #         VERSION="${{ steps.version.outputs.version }}"
+  #         DIST_DIR="target/release/praymodoro-${VERSION}-linux"
+  #
+  #         mkdir -p "${DIST_DIR}"
+  #         cp "target/release/praymodoro" "${DIST_DIR}/"
+  #
+  #         # Copy assets
+  #         mkdir -p "${DIST_DIR}/assets"
+  #         cp -r "assets/characters" "${DIST_DIR}/assets/"
+  #         cp -r "assets/ui" "${DIST_DIR}/assets/"
+  #         cp -r "assets/fonts" "${DIST_DIR}/assets/"
+  #
+  #         # Create simple run script
+  #         cat > "${DIST_DIR}/run.sh" << 'SCRIPT'
+  #         #!/bin/bash
+  #         cd "$(dirname "$0")"
+  #         ./praymodoro
+  #         SCRIPT
+  #         chmod +x "${DIST_DIR}/run.sh"
+  #
+  #     - name: Create tarball
+  #       working-directory: src/target/release
+  #       run: |
+  #         VERSION="${{ steps.version.outputs.version }}"
+  #         tar -czvf "Praymodoro_${VERSION}_linux.tar.gz" "praymodoro-${VERSION}-linux"
+  #
+  #     - name: Upload Linux artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: linux-build
+  #         path: src/target/release/*.tar.gz
 
   release:
-    needs: [build-macos, build-windows, build-linux]
+    needs: [build-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -294,17 +298,19 @@ jobs:
           name: macos-build
           path: artifacts/macos
 
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-build
-          path: artifacts/windows
+      # Disabled - Windows builds disabled
+      # - name: Download Windows artifacts
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: windows-build
+      #     path: artifacts/windows
 
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-build
-          path: artifacts/linux
+      # Disabled - Linux builds disabled
+      # - name: Download Linux artifacts
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: linux-build
+      #     path: artifacts/linux
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -313,9 +319,6 @@ jobs:
           name: Praymodoro v${{ steps.version.outputs.version }} (Build ${{ github.run_number }})
           files: |
             artifacts/macos/*.dmg
-            artifacts/windows/*.zip
-            artifacts/windows/*_setup.exe
-            artifacts/linux/*.tar.gz
           draft: false
           prerelease: false
           generate_release_notes: true
